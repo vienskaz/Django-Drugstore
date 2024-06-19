@@ -1,0 +1,48 @@
+{% extends 'shop/main.html' %}
+{% load static %}
+
+{% block content %}
+<h1 class="text-center">Koszyk</h1>
+
+{% if items %}
+<div class="container">
+  {% for item in items %}
+  <div class="card mb-4 d-flex flex-row align-items-center">
+    <div class="card-header">
+      <img src="{{ item.item.image.url }}" alt="{{ item.item.name }}" class="card-img-top" style="width: 150px; height: auto;">
+    </div>
+    <div class="card-body">
+      <h5 class="card-title">{{ item.item.name }}</h5>
+      <p class="card-text">Cena: {{ item.item.price|floatformat:2 }} PLN</p>
+      <p class="card-text">Ilość: {{ item.quantity }}</p>
+      <p class="card-text"><strong>Razem: {{ item.get_total }} PLN</strong></p>
+    </div>
+    <div class="ml-auto"> 
+      <button data-item="{{item.item.id}}" data-action="add" class="btn btn-success btn-lg update-cart width-equal">+</button> 
+      <button data-item="{{item.item.id}}" data-action="remove" class="btn btn-danger btn-lg ml-2 update-cart width-equal">-</button> 
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+  <p class="text-center">Koszyk jest pusty.</p>
+{% endif %}
+
+<p class="text-center"><strong>Razem: {{ order.get_cart_total|floatformat:2 }} PLN</strong></p>
+<p class="text-center"><strong>Ilość przedmiotów: {{ order.get_cart_items }}</strong></p>
+
+{% if items %}
+<div class="text-center mt-4"> 
+  <a class="btn btn-primary btn-lg" href="{% url 'checkout' %}">Kasa</a> 
+</div>
+{% endif %}
+
+<style>
+.width-equal {
+  width: 50px;
+  margin-right: 5px;
+
+}
+</style>
+
+{% endblock %}

@@ -1,0 +1,70 @@
+{% extends 'shop/main.html' %}
+{% load static %}
+
+{% block content %}
+
+<br>
+<div class="d-flex justify-content-end">
+  <form method="GET" action="{% url 'products' %}" class="form-inline">
+    {{ search_form.as_p }}
+    <button class="btn btn-primary" type="submit"><i class="fa-solid fa-magnifying-glass"></i> Szukaj</button>
+  </form>
+</div>
+
+{% for item in page_obj %}
+  {% include "shop/includes/productcard.html" %}
+{% endfor %}
+
+<div class="pagination">
+  <span class="step-links">
+      {% if page_obj.has_previous %}
+          <a href="?page=1">&laquo; Pierwsza</a>
+          <a href="?page={{ page_obj.previous_page_number }}">Poprzednia</a>
+      {% endif %}
+
+      <span class="current">
+          Strona {{ page_obj.number }} z {{ page_obj.paginator.num_pages }}
+      </span>
+
+      {% if page_obj.has_next %}
+          <a href="?page={{ page_obj.next_page_number }}">Następna</a>
+          <a href="?page={{ page_obj.paginator.num_pages }}">Ostatnia &raquo;</a>
+      {% endif %}
+  </span>
+</div>
+
+<style>
+.form-inline {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 10px; 
+}
+
+.btn-primary {
+  font-size: small;
+  margin-right: 10px; 
+  height: 30px;
+  width: 100px;
+  padding: 3px;
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.pagination .step-links a, .pagination .step-links span {
+  margin: 0 5px;
+  padding: 5px 10px;
+  border: 1px solid #ddd;
+  text-decoration: none;
+  color: #333;
+}
+
+.pagination .step-links .current {
+  font-weight: bold;
+}
+</style>
+
+{% endblock %}

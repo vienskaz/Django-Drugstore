@@ -1,0 +1,41 @@
+{% load static %}
+
+<div class="card">
+  <a href="{% url 'item-detail-page' slug=item.slug %}">
+    <img class="card-img-top" src="{{ item.image.url }}" alt="Card image cap">
+  </a>
+  <div class="card-body">
+
+    <a href="{% url 'item-detail-page' slug=item.slug %}">
+      <h5 class="card-title">{{item.name}}</h5>
+    </a>
+    <a href="{% url 'item-detail-page' slug=item.slug %}">
+      <p class="card-text">{{item.price|floatformat:2 }} PLN</p>
+    </a>
+  </div>
+</div>
+
+<style>
+a:link {
+  text-decoration: none;
+  color: black;
+}
+p {
+  color: black;
+}
+
+.card {
+  width: 18rem;
+  height: 250px;
+  margin: 10px;
+  display: inline-block;
+  border: 1px solid #ccc; 
+}
+
+.card-img-top {
+  width: 100%;
+  height: 150px;
+  padding: 10px;
+
+}
+</style>

@@ -1,0 +1,359 @@
+{% extends 'shop/main.html' %}
+{% load static %}
+{% block content %}
+
+{% if requires_prescription %}
+<div class="box-prescription-container">
+<h1>Wymagana recepta</h1>
+<h2>Załącz receptę w formacie PDF</h2>
+
+<div id="upload-form-div">
+<form id="upload-form" enctype="multipart/form-data" method="post">
+  {% csrf_token %}
+  <input type="file" id="pdf-prescription" name="pdf_prescription" accept="application/pdf,application/vnd.ms-excel" required />
+  <button type="button" class="btn btn-primary mt-3" onclick="uploadPrescription()">Zapisz</button>
+</form>
+</div>
+<br>
+<div id="prescription-message"></div>
+</div>
+
+
+
+
+
+<script>
+  var prescriptionID = null; 
+
+  function uploadPrescription() {
+    var fileInput = document.getElementById('pdf-prescription');
+    var file = fileInput.files[0];
+    var formData = new FormData();
+    formData.append('pdf_prescription', file);
+    formData.append('order_id', '{{ order.id }}');
+
+
+    {% if user.is_authenticated %}
+      var isAuthenticated = true;
+    {% else %}
+      var isAuthenticated = false;
+    {% endif %}
+
+    if (!isAuthenticated) {
+      document.getElementById('prescription-message').innerHTML = 'Musisz być zalogowany, aby przesłać receptę.';
+      return;
+    }
+
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '{% url "upload_prescription" %}', true);
+
+    xhr.setRequestHeader('X-CSRFTOKEN', '{{ csrf_token }}');
+
+    xhr.onload = function() {
+      if (xhr.status === 200) {
+        var response = JSON.parse(xhr.responseText);
+        document.getElementById('prescription-message').innerHTML = response.message;
+        prescriptionID = response.prescription_id;
+        document.getElementById('upload-form-div').style.display = 'none';
+        var paymentInfoDiv = document.getElementById('form');
+        paymentInfoDiv.removeAttribute('hidden');
+      } else {
+        document.getElementById('prescription-message').innerHTML = 'Wystąpił błąd podczas przesyłania recepty.';
+      }
+    };
+    xhr.send(formData);
+  }
+</script>
+
+
+{% endif %}
+
+{% if conflict_found %}
+<div class="box-conflict-container">
+<h2>W koszyku występują leki, których substancje aktywne mają ze sobą konfilkt:</h2>
+<ul>
+    {% for key, values in conflicts_map.items %}
+        <li><strong>{{ key }}</strong> konfliktuje z:
+            <ul>
+                {% for value in values %}
+                    <li>{{ value }}</li>
+                {% endfor %}
+            </ul>
+        </li>
+    {% endfor %}
+</ul>
+{% endif %}
+</div>
+
+
+
+
+<div id="shipping-info-form" class="container mt-5">
+  <div class="row">
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header">
+          <h3 class="text-center">Informacje kupującego</h3>
+        </div>
+        <div class="card-body">
+          {% if requires_prescription %}
+          <form hidden id="form">
+          {% else %}
+          <form id="form">
+          {% endif %}
+            <div id="user-info">
+              <div class="form-group">
+                <label for="name">Imię i Nazwisko</label>
+                <input required class="form-control" type="text" name="name" placeholder="Imię i Nazwisko..">
+              </div>
+              <div class="form-group">
+                <label for="email">Email</label>
+                <input required class="form-control"  pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$" type="email" name="email" placeholder="Email..">
+              </div>
+            </div>
+            <div id="shipping-info">
+              <h4>Adres dostawy:</h4>
+              <div class="form-group">
+                <label for="address">Ulica</label>
+                <input class="form-control" type="text" name="address" required placeholder="Ulica..">
+              </div>
+              <div class="form-group">
+                <label for="city">Miasto</label>
+                <input class="form-control" type="text" name="city" required placeholder="Miasto..">
+              </div>
+              <div class="form-group">
+                <label for="state">Województwo</label>
+                <input class="form-control" type="text" name="state" required placeholder="Województwo..">
+              </div>
+              <div class="form-group">
+                <label for="zipcode">Kod pocztowy</label>
+                <input class="form-control" type="text" name="zipcode" required placeholder="Kod pocztowy..">
+              </div>
+              <div class="form-group">
+                <label for="country">Państwo</label>
+                <input class="form-control" type="text" name="country" required placeholder="Państwo..">
+              </div>
+            </div>
+            <div class="text-center">
+              <input id="form-button" class="btn btn-primary mt-3" type="submit" value="Kontunuj" onclick="showPaymentOptions()" disabled>
+            </div>
+          </form>
+          <div hidden class="box-element mt-3" id="payment-info">
+            <h4 class="text-center">Wybierz sposób zapłaty</h4>
+            <div class="text-center">
+              <button id="make-payment" class="btn btn-success ">Zapłać</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header">
+          <h3 class="text-center">Podsumowanie</h3>
+        </div>
+        <div class="card-body">
+          <div class="cart-container">
+            <div class="cart-row">
+              {% for item in items %}
+              <div id="item-box-summary" class="cart-item d-flex align-items-center mb-3">
+                <img src="{{ item.item.image.url }}" alt="{{ item.item.name }}" class="img-fluid" style="max-width: 100px; max-height: 100px;">
+                <div class="ml-3">
+                  <p><strong>{{ item.item.name }}</strong></p>
+                  <p>Cena {{ item.item.price|floatformat:2 }} PLN</p>
+                  <p>Substancja aktywa: {{item.item.active_drug}}</p>
+                  <p>Ilość: {{ item.quantity }}</p>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+
+            <hr>
+            <h4 class="text-center">Podsumowanie</h4>
+            <hr>
+            <div class="d-flex justify-content-between">
+              <h5>Zawartość koszyka:</h5>
+              <h5>{{ order.get_cart_items }}</h5>
+            </div>
+            <div class="d-flex justify-content-between">
+              <h5>Razem:</h5>
+              <h5>{{ order.get_cart_total|floatformat:2 }} PLN</h5>
+            </div>
+
+            <div class="text-center mt-3">
+              <button id="backtocart" class="btn btn-secondary">
+                <a href="{% url 'cart' %}" class="text-white text-decoration-none">&#x2190; &nbsp; Powrót do koszyka</a>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<style>
+  .box-prescription-container{
+  margin: auto; 
+  align-items: center;
+  text-align: center;
+  border: 1px solid #ccc; 
+  max-width: 1300px; 
+  
+
+  }
+
+  .box-conflict-container {
+        margin: auto; 
+        max-width: 1300px; 
+        padding: 20px; 
+        border: 2px solid #d36a14; 
+        background-color: #f2f700; 
+        text-align: center; 
+    }
+    
+    .box-conflict-container ul {
+        list-style-type: none; 
+        padding: 0;
+    }
+    #item-box-summary{
+      border: 1px solid #ccc; 
+    }
+
+</style>
+
+
+<script>
+function showPaymentOptions() {
+  console.log("showPaymentOptions() called");
+  var paymentInfoDiv = document.getElementById('payment-info');
+  paymentInfoDiv.removeAttribute('hidden');
+}
+
+var total = '{{ order.get_cart_total }}'
+
+if (user != 'AnonymousUser') {
+  document.getElementById('user-info').innerHTML = ''
+}
+
+var form = document.getElementById('form')
+var formButton = document.getElementById('form-button')
+
+form.addEventListener('input', function() {
+  if (user != 'AnonymousUser') {
+    validateForm();
+  } else {
+    validateForm_unlogged();
+  }
+});
+
+function validateForm() {
+  var address = form.address.value.trim();
+  var city = form.city.value.trim();
+  var state = form.state.value.trim();
+  var zipcode = form.zipcode.value.trim();
+  var country = form.country.value.trim();
+
+  if (address && city && state && zipcode && country) {
+    formButton.disabled = false;
+  } else {
+    formButton.disabled = true;
+  }
+}
+
+function validateForm_unlogged() {
+  var address = form.address.value.trim();
+  var city = form.city.value.trim();
+  var state = form.state.value.trim();
+  var zipcode = form.zipcode.value.trim();
+  var country = form.country.value.trim();
+  var name = form.name.value.trim();
+  var email = form.email.value.trim();
+  var emailPattern = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/;
+
+  if (address && city && state && zipcode && country && name && emailPattern.test(email)) {
+    formButton.disabled = false;
+  } else {
+    formButton.disabled = true;
+  }
+}
+
+form.addEventListener('submit', function (e) {
+  e.preventDefault()
+  console.log('Form Submitted...')
+  document.getElementById('form-button').classList.add("hidden")
+  document.getElementById('payment-info').classList.remove("hidden")
+
+  var userFormData = {
+    'name': null,
+    'email': null,
+    'total': total,
+  }
+
+  var shippingInfo = {
+    'address': form.address.value,
+    'city': form.city.value,
+    'state': form.state.value,
+    'zipcode': form.zipcode.value,
+    'country': form.country.value,
+  }
+
+  if (user == 'AnonymousUser') {
+    userFormData.name = form.name.value
+    userFormData.email = form.email.value
+  }
+})
+
+document.getElementById('make-payment').addEventListener('click', function (e) {
+  var userFormData = {
+    'name': null,
+    'email': null,
+    'total': total,
+  }
+
+  var shippingInfo = {
+    'address': form.address.value,
+    'city': form.city.value,
+    'state': form.state.value,
+    'zipcode': form.zipcode.value,
+    'country': form.country.value,
+  }
+
+  if (user == 'AnonymousUser') {
+    userFormData.name = form.name.value
+    userFormData.email = form.email.value
+  }
+
+  submitFormData(userFormData, shippingInfo)
+})
+
+function submitFormData(userFormData, shippingInfo) {
+  console.log("payment clicked")
+
+  var url = '/process_order/';
+  fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-type': 'application/json',
+      'X-CSRFTOKEN': csrftoken,
+    },
+    body: JSON.stringify({ 'form': userFormData, 'shipping': shippingInfo })
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      console.log('Success:', data);
+      alert('Transaction completed');
+
+      var cart = {};
+      document.cookie = 'cart=' + JSON.stringify(cart) + ";domain=;path=/";
+
+      window.location.href = "{% url 'products' %}";
+    });
+}
+</script>
+
+{% endblock %}
+
+
