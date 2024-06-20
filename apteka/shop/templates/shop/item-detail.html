@@ -9,29 +9,34 @@
         <p><strong>Cena:</strong> {{ item.price }} PLN</p>
         <p><strong>Substancja aktywna:</strong> {{ item.active_drug }}</p>
         <p><strong>Dawkowanie:</strong> {{ item.dosage }}</p>
+        {% if item.prescription == True %}
+        <p><strong>Wymagana recepta:</strong> Tak</p>
+        {% else %}
+        <p><strong>Wymagana recepta:</strong> Nie</p>
+        {% endif %}
         <button data-item="{{ item.id }}" data-action="add" class="update-cart btn btn-primary">Dodaj do koszyka</button>
     </div>
 </div>
 
 <style>
     .item-detail-container {
-        max-width: 800px; 
-        margin: auto; 
-        padding: 20px; 
-        border: 1px solid #ccc; 
-        background-color: #fff; 
-        box-shadow: 0 0 10px rgba(0,0,0,0.1); 
-        text-align: center; 
+        max-width: 800px;
+        margin: auto;
+        padding: 20px;
+        border: 1px solid #ccc;
+        background-color: #fff;
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        text-align: center;
     }
 
     .item-image {
-        width: 100%; 
-        max-width: 500px; 
-        margin-bottom: 20px; 
+        width: 100%;
+        max-width: 500px;
+        margin-bottom: 20px;
     }
 
     .item-details {
-        text-align: left; 
+        text-align: left;
     }
 
 
